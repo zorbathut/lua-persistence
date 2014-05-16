@@ -1,0 +1,25 @@
+This is the Lua persistence layer used in Trion Worlds's RIFT. It may be of use to people who need their own persistence code.
+
+Design goals:
+
+* Produce pretty output when reasonably possible
+* Serialize any raw data consisting entirely of numbers, strings, booleans, and tables, including but not limited to non-tree layouts, tables as keys, etc
+* Always produce usable output for LuaJIT
+
+This library makes no attempt to serialize functions or threads. Userdata are treated like tables and metatables are ignored.
+
+This library runs in two main modes, "inline" and "full". Full uses newlines and whitespace for formatting and attempts to serialize all forms of data. Inline is a limited mode intended for debug output; it will refuse to serialize non-tree structures or extremely large amounts of data.
+
+-----
+
+A few notes:
+
+In Full mode, the library can generate output in three different forms.
+
+The first preferred form is the pretty-print option, which uses indents and newlines to present something easily human-readable.
+
+If the output contains non-tree structures it will fall back to the second form. The second form is effectively unreadable by humans, using a large local table to organize data in an intermediate form 
+
+The third form is designed to cope with hardcoded limits in LuaJIT. LuaJIT will deal with only a limited number of constants in a single function block; the third form splits the output into multiple function blocks, executed in series.
+
+If your output is incredibly ugly, it's probably fallen back to the second or third form.
