@@ -47,7 +47,7 @@ Below are provided Lua equivalents of those functions. If you want this library 
 If you do, please re-submit your implementations so we can add it to this repository :) ]]
 
 local function StringIdentifierSafe(input)
-  return string.match("[a-zA-Z_][a-zA-Z0-9_]*", input)
+  return string.match(input, "^[%a_][%w_]*$")
 end
 
 local function Append()
@@ -229,7 +229,8 @@ local writers = {
   ["userdata"] = writerTable, -- we pretend this is a table for the sake of serialization. we won't lose any useful data - it would have been nil otherwise - and we gain the ability to dump the Event.UI hierarchy.
 }
 
-local function write(f, item, level, refs, used)
+-- actually local, just overwrites a previous line
+function write(f, item, level, refs, used)
   return writers[type(item)](f, item, level, refs, used)
 end
 
