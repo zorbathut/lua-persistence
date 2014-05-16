@@ -3,7 +3,8 @@ This is the Lua persistence layer used in Trion Worlds's RIFT. It may be of use 
 Design goals:
 
 * Produce pretty output when reasonably possible
-* Serialize any raw data consisting entirely of numbers, strings, booleans, and tables, including but not limited to non-tree layouts, tables as keys, etc
+* Produce consistent output with the same input
+* Serialize any raw data consisting entirely of numbers, strings, booleans, and tables, including but not limited to non-tree layouts, tables as keys, and other unconventional data layouts
 * Always produce usable output for LuaJIT
 
 This library makes no attempt to serialize functions or threads. Userdata are treated like tables and metatables are ignored.
@@ -16,10 +17,20 @@ A few notes:
 
 In Full mode, the library can generate output in three different forms.
 
-The first preferred form is the pretty-print option, which uses indents and newlines to present something easily human-readable.
+The first preferred form is the pretty-print option, which uses indents and newlines to present something easily human-readable. It sorts table keys in order to guarantee consistent output, both for the sake of humans and for the sake of diff utilities.
 
 If the output contains non-tree structures it will fall back to the second form. The second form is effectively unreadable by humans, using a large local table to organize data in an intermediate form 
 
 The third form is designed to cope with hardcoded limits in LuaJIT. LuaJIT will deal with only a limited number of constants in a single function block; the third form splits the output into multiple function blocks, executed in series.
 
 If your output is incredibly ugly, it's probably fallen back to the second or third form.
+
+-----
+
+Usage:
+
+serializeInline(parameter): Serializes "parameter" in the inline format. Returns nil if it cannot be serialized.
+
+serializeFull(elements, [exists]): Serializes "elements" in the full format. If exists is provided, it must be a table; any keys in "exists" will have guaranteed entries generated in the output. If no such key exists in "elements", the key's value will be nil. This is useful for distinguish between "this file is not meant to contain a value" and "this file is meant to contain a value, and that value is nil".
+
+dump(...): Placed into an actual variable named _G, not into the function's environment. Attempts to inline-serialize all parameters and print them with _G.print(). Intended for debug output.

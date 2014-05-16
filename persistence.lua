@@ -38,6 +38,56 @@ local loadstring = _G.loadstring
 local max = _G.math.max
 local time = _G.os.time
 
+--[[ PERFORMANCE NOTES
+
+For the sake of speed, the Trion Worlds codebase moves some functionality into C++.
+
+Below are provided Lua equivalents of those functions. If you want this library to be really fast, you should probably reimplement them in C++.
+
+If you do, please re-submit your implementations so we can add it to this repository :) ]]
+
+local function StringIdentifierSafe(input)
+  return string.match("[a-zA-Z_][a-zA-Z0-9_]*", input)
+end
+
+local function Append()
+  local storage = {}
+  return function(typ, data)
+    if typ == nil then
+      -- output
+      storage = {table.concat(storage)}
+      return storage[1]
+    elseif typ == 0 then
+      -- nil
+      tinsert(storage, "nil")
+    elseif typ == 1 then
+      -- number
+      tinsert(storage, tostring(data))
+    elseif typ == 2 then
+      -- string, must be safetied
+      tinsert(storage, string.format("%q", data))
+    elseif typ == 3 then
+      -- true
+      tinsert(storage, "true")
+    elseif typ == 4 then
+      -- false
+      tinsert(storage, "false")
+    else
+      -- string, must be literal
+      tinsert(storage, typ)
+    end
+    
+    for i=table.getn(storage)-1, 1, -1 do
+      if string.len(storage[i]) > string.len(storage[i+1]) then
+        break
+      end
+      storage[i] = storage[i] .. table.remove(storage)
+    end
+  end
+end
+
+--[[ END OF PERFORMANCE SECTION ]]
+
 local function sorter(a, b)
   if type(a) ~= type(b) then
     return type(a) < type(b)
@@ -179,7 +229,7 @@ local writers = {
   ["userdata"] = writerTable, -- we pretend this is a table for the sake of serialization. we won't lose any useful data - it would have been nil otherwise - and we gain the ability to dump the Event.UI hierarchy.
 }
 
-function write(f, item, level, refs, used)
+local function write(f, item, level, refs, used)
   return writers[type(item)](f, item, level, refs, used)
 end
 
@@ -205,7 +255,7 @@ end
 
 -- At some point we should maybe expose this to the outside world.
 -- forceSplitMode - nil or 0, 1, 2
-function persist(input, actives, f_out, forceSplitMode)
+local function persist(input, actives, f_out, forceSplitMode)
   -- default
   forceSplitMode = forceSplitMode or 0
   
@@ -361,15 +411,3 @@ function _G.dump(...)
   -- intentionally using _G.print here
   _G.print(unpack(stringized, 1, elements))
 end
-
---[[function persistToString(input)
-  local store = ""
-  -- AMAZINGLY INEFFICIENT, IMPROVE
-  f = function (str)
-    store = store .. str
-  end
-  
-  persist(input, f)
-  
-  return store
-end]]
